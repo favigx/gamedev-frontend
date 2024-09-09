@@ -36,7 +36,7 @@ function Login({ setPage, setIsLoggedIn }: Props) {
 
         localStorage.setItem("token", token);
 
-        setPage("project");
+        setPage("showrooms");
         setIsLoggedIn(true);
       })
       .catch((error) => {

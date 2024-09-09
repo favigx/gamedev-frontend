@@ -28,7 +28,7 @@ function App() {
         pageUrl = getUrl;
         setPage(getUrl);
       } else {
-        pageUrl = "home";
+        pageUrl = "login";
       }
     }
     window.history.pushState(null, "", "?page=" + pageUrl);

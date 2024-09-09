@@ -1,22 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
 import SockJS from 'sockjs-client';
 import { over, Client, Message } from 'stompjs';
+import RoomInterface from '../interface/RoomInterface';
+import SelectedRoom from './SelectedRoom';
 
-interface Room {
-    roomId: string;
-    roomName: string;
-    createdBy: string;
-    participants: string[];
-}
 
 const ShowRooms = () => {
-    const [rooms, setRooms] = useState<Room[]>([]);
+    const [rooms, setRooms] = useState<RoomInterface[]>([]);
     const [stompClient, setStompClient] = useState<Client | null>(null);
+    const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
 
     const handleMessage = useCallback((message: Message) => {
         if (message.body) {
             try {
-                const roomsData: Room[] = JSON.parse(message.body);
+                const roomsData: RoomInterface[] = JSON.parse(message.body);
                 setRooms(roomsData);
             } catch (error) {
                 console.error('Error parsing rooms data:', error);
@@ -51,23 +48,30 @@ const ShowRooms = () => {
         };
     }, [handleMessage]); 
 
+    const handleRoomClick = (roomId: string) => {
+        setSelectedRoomId(roomId); 
+    };
+
     return (
         <div id="rooms-container">
-            {rooms.length === 0 ? (
-                <p>No rooms available.</p>
+            {selectedRoomId ? ( 
+                <SelectedRoom roomId={selectedRoomId} />
             ) : (
-                rooms.map((room) => (
-                    <button>
-                    <div key={room.roomId} className="room-container">
-                        <div className="room-name">Room Name: {room.roomName || 'N/A'}</div>
-                        <div className="created-by">Created By: {room.createdBy || 'Unknown'}</div>
-                        <div className="participants">
-                            Participants: {room.participants.length ? room.participants.join(', ') : 'None'}
-                        </div>
-                        
-                    </div>
-                    </button>
-                ))
+                rooms.length === 0 ? (
+                    <p>No rooms available.</p>
+                ) : (
+                    rooms.map((room) => (
+                        <button key={room.roomId} onClick={() => handleRoomClick(room.roomId)}> 
+                            <div className="room-container">
+                                <div className="room-name">Room Name: {room.roomName || 'N/A'}</div>
+                                <div className="created-by">Created By: {room.createdBy || 'Unknown'}</div>
+                                <div className="participants">
+                                    Participants: {room.participants.length ? room.participants.join(', ') : 'None'}
+                                </div>
+                            </div>
+                        </button>
+                    ))
+                )
             )}
         </div>
     );
