@@ -2,11 +2,9 @@
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
     line-height: 1.5;
     font-weight: 400;
-
     color-scheme: light dark;
     color: rgba(255, 255, 255, 0.87);
     background-color: #242424;
-
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -35,9 +33,11 @@ h1 {
     line-height: 1.1;
 }
 
+h2,
 h3 {
     padding-top: 0.5em;
 }
+
 button {
     border-radius: 8px;
     border: 1px solid #363636;
@@ -77,15 +77,26 @@ input:focus {
     outline: none;
 }
 
+#rooms-container,
 form {
+    max-width: 75vh;
     margin: 0;
     padding: 0 1em 1em 1em;
     background-color: #1a1a1ac0;
     border-radius: 8px;
 }
 
-p {
+#participantsTitle {
+    margin-bottom: 0;
+}
+
+.participants {
+    margin: 0;
+    padding: 0;
+}
+form p {
     margin-top: 0;
+    margin-bottom: 1em;
 }
 
 @media (prefers-color-scheme: light) {
@@ -97,6 +108,13 @@ p {
         color: #747bff;
     }
     button {
+        background-color: #f1f1f1;
+    }
+    #rooms-container,
+    form {
         background-color: #f9f9f9;
+    }
+    input {
+        background-color: #e4e4e4;
     }
 }
