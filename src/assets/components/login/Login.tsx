@@ -63,7 +63,7 @@ function Login({ setPage, setIsLoggedIn }: Props) {
                 <br />
                 <br />
                 {errorMessage && (
-                    <p style={{ fontSize: "15px", wordBreak: "break-all", whiteSpace: "normal" }}>
+                    <p style={{ fontSize: "15px" }}>
                         {errorMessage} <br /> Prova igen!
                     </p>
                 )}
