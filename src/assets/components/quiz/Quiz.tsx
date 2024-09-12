@@ -14,7 +14,10 @@ function Quiz({ roomId }: { roomId: string }) {
   const [timeRemaining, setTimeRemaining] = useState<number>(15);
   const [answerUpdates, setAnswerUpdates] = useState<string[]>([]);
   const [hasAnswered, setHasAnswered] = useState<boolean>(false);
-  const [numQuestions, setNumQuestions] = useState<number>(5); 
+  const [numQuestions, setNumQuestions] = useState<number>(5);
+  const [questionDisplayTime, setQuestionDisplayTime] = useState<number | null>(null);
+  const [userScore, setUserScore] = useState<number | null>(null);
+
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -44,6 +47,13 @@ function Quiz({ roomId }: { roomId: string }) {
         const answerUpdate = message.body;
         setAnswerUpdates((prevUpdates) => [...prevUpdates, answerUpdate]);
       });
+
+      client.subscribe(`/topic/calculate-points`, (message: Message) => {
+        const newScore = Number(message.body);
+        setUserScore((prevScore) => {
+          return (prevScore || 0) + newScore;
+        });
+      })
     });
 
     setStompClient(client);
@@ -56,9 +66,24 @@ function Quiz({ roomId }: { roomId: string }) {
   }, [roomId]);
 
   useEffect(() => {
+    if (userScore !== null) {
+      console.log("Poäng:", userScore);
+      renderScore(userScore)
+    }
+  }, [userScore]);
+
+  function renderScore(score: any) {
+    let showScore: any = document.getElementById("showScore")
+    showScore.innerHTML = "Dina poäng: " + score
+  }
+
+  useEffect(() => {
     if (questions.length > 0) {
       const handleTimer = () => {
         setTimeRemaining(15);
+        if (currentQuestionIndex === 0 && questionDisplayTime === null) {
+          setQuestionDisplayTime(Date.now() / 1000);
+        }
         const intervalId = setInterval(() => {
           setTimeRemaining((prevTime) => {
             if (prevTime <= 1) {
@@ -67,6 +92,8 @@ function Quiz({ roomId }: { roomId: string }) {
                 const nextIndex = (prevIndex + 1) % questions.length;
                 setHasAnswered(false);
                 setAnswerUpdates([]);
+
+                setQuestionDisplayTime(Date.now() / 1000);
 
                 return nextIndex;
               });
@@ -97,6 +124,22 @@ function Quiz({ roomId }: { roomId: string }) {
     if (hasAnswered) {
       console.log("You have already answered this question.");
       return;
+    }    
+
+    if (questionDisplayTime) {
+      const timeTaken = (Date.now() / 1000) - questionDisplayTime;
+      const formattedTimeTaken = timeTaken.toFixed(1); 
+      console.log(`Time taken to answer: ${formattedTimeTaken} seconds`);
+
+      stompClient?.publish({
+        destination: `/app/calculate-points`,
+        body: JSON.stringify({
+          questionId: questionId,
+          answer: answer,
+          username: loggedInUserId,
+          timeToAnswer: timeTaken
+        })
+      })
     }
 
     console.log(`Question ID: ${questionId}, Answer: ${answer}`);
@@ -139,7 +182,7 @@ function Quiz({ roomId }: { roomId: string }) {
         </select>
 
         <button onClick={startQuiz}>Starta Quiz</button>
-
+        <h4 id="showScore"></h4>
           <h3>Fråga:</h3>
           {currentQuestion ? (
             <div>
