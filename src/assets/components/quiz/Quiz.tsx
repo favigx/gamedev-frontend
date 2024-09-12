@@ -16,8 +16,7 @@ function Quiz({ roomId }: { roomId: string }) {
   const [hasAnswered, setHasAnswered] = useState<boolean>(false);
   const [numQuestions, setNumQuestions] = useState<number>(5);
   const [questionDisplayTime, setQuestionDisplayTime] = useState<number | null>(null);
-  const [userScore, setUserScore] = useState<number | null>(null);
-
+  const [userScores, setUserScores] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -28,6 +27,7 @@ function Quiz({ roomId }: { roomId: string }) {
   }, []);
 
   useEffect(() => {
+    
     fetch(`http://localhost:8080/room/${roomId}`)
       .then((res) => res.json())
       .then((data) => setSelectedRoom(data))
@@ -49,11 +49,16 @@ function Quiz({ roomId }: { roomId: string }) {
       });
 
       client.subscribe(`/topic/calculate-points`, (message: Message) => {
-        const newScore = Number(message.body);
-        setUserScore((prevScore) => {
-          return (prevScore || 0) + newScore;
-        });
-      })
+
+        const { score, username } = JSON.parse(message.body);
+
+        if (username) {
+          setUserScores(prevScores => ({
+            ...prevScores,
+            [username]: (prevScores[username] || 0) + score
+          }));
+        }
+      });
     });
 
     setStompClient(client);
@@ -63,18 +68,28 @@ function Quiz({ roomId }: { roomId: string }) {
         client.disconnect();
       }
     };
-  }, [roomId]);
+  }, [roomId, loggedInUserId]);
 
   useEffect(() => {
-    if (userScore !== null) {
-      console.log("Poäng:", userScore);
-      renderScore(userScore)
+    if (loggedInUserId) {
+      console.log("SCORES>>>>>>", JSON.stringify(userScores, null, 2)); 
+      renderScore(userScores)
     }
-  }, [userScore]);
+  }, [userScores, loggedInUserId]);
 
-  function renderScore(score: any) {
-    let showScore: any = document.getElementById("showScore")
-    showScore.innerHTML = "Dina poäng: " + score
+  function renderScore(listOfScores: Record<string, number>) {
+    const displayScoreDiv = document.getElementById("displayScoreDiv");
+  
+    if (displayScoreDiv) {
+      displayScoreDiv.innerHTML = '';
+  
+      for (const [username, score] of Object.entries(listOfScores)) {
+        const userPoints = document.createElement("h4");
+        userPoints.innerHTML = `${username} poäng: ${score}`;
+  
+        displayScoreDiv.appendChild(userPoints);
+      }
+    }
   }
 
   useEffect(() => {
@@ -110,7 +125,6 @@ function Quiz({ roomId }: { roomId: string }) {
     }
   }, [questions, currentQuestionIndex]);
 
-
   function startQuiz() {
     if (stompClient) {
       stompClient.publish({
@@ -124,11 +138,11 @@ function Quiz({ roomId }: { roomId: string }) {
     if (hasAnswered) {
       console.log("You have already answered this question.");
       return;
-    }    
+    }
 
     if (questionDisplayTime) {
       const timeTaken = (Date.now() / 1000) - questionDisplayTime;
-      const formattedTimeTaken = timeTaken.toFixed(1); 
+      const formattedTimeTaken = timeTaken.toFixed(1);
       console.log(`Time taken to answer: ${formattedTimeTaken} seconds`);
 
       stompClient?.publish({
@@ -139,7 +153,7 @@ function Quiz({ roomId }: { roomId: string }) {
           username: loggedInUserId,
           timeToAnswer: timeTaken
         })
-      })
+      });
     }
 
     console.log(`Question ID: ${questionId}, Answer: ${answer}`);
@@ -171,46 +185,46 @@ function Quiz({ roomId }: { roomId: string }) {
 
   return (
     <>
-        <label htmlFor="numQuestions">Välj antal frågor:</label>
-        <select
-          id="numQuestions"
-          value={numQuestions}
-          onChange={(e) => setNumQuestions(Number(e.target.value))}
-        >
-          <option value={5}>5 frågor</option>
-          <option value={10}>10 frågor</option>
-        </select>
+      <label htmlFor="numQuestions">Välj antal frågor:</label>
+      <select
+        id="numQuestions"
+        value={numQuestions}
+        onChange={(e) => setNumQuestions(Number(e.target.value))}
+      >
+        <option value={5}>5 frågor</option>
+        <option value={10}>10 frågor</option>
+      </select>
 
-        <button onClick={startQuiz}>Starta Quiz</button>
-        <h4 id="showScore"></h4>
-          <h3>Fråga:</h3>
-          {currentQuestion ? (
-            <div>
-              <p><strong>{currentQuestion.question}</strong></p>
-              <div>
-                {currentQuestion.answers.map((answer, index) => (
-                  <button
-                    key={index}
-                    onClick={() =>
-                      handleAnswerClick(currentQuestion.questionId, answer)
-                    }
-                    disabled={hasAnswered}
-                  >
-                    {answer}
-                  </button>
-                ))}
-              </div>
-              <p>Tid kvar: {timeRemaining} sekunder</p>
-              <div>
-                <h4>Andra deltagare som svarat:</h4>
-                {answerUpdates.map((update, index) => (
-                  <p key={index}>{update}</p>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p>Inga frågor tillgängliga</p>
-          )}
+      <button onClick={startQuiz}>Starta Quiz</button>
+      <div id="displayScoreDiv"></div>
+      <h3>Fråga:</h3>
+      {currentQuestion ? (
+        <div>
+          <p><strong>{currentQuestion.question}</strong></p>
+          <div>
+            {currentQuestion.answers.map((answer, index) => (
+              <button
+                key={index}
+                onClick={() =>
+                  handleAnswerClick(currentQuestion.questionId, answer)
+                }
+                disabled={hasAnswered}
+              >
+                {answer}
+              </button>
+            ))}
+          </div>
+          <p>Tid kvar: {timeRemaining} sekunder</p>
+          <div>
+            <h4>Andra deltagare som svarat:</h4>
+            {answerUpdates.map((update, index) => (
+              <p key={index}>{update}</p>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <p>Inga frågor tillgängliga</p>
+      )}
     </>
   );
 }
