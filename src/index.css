@@ -77,7 +77,15 @@ input:focus {
     outline: none;
 }
 
-#rooms-container,
+#rooms-container {
+    min-width: 100vh;
+    max-width: 100vh;
+    margin: 0;
+    padding: 0 1em 1em 1em;
+    background-color: #1a1a1ac0;
+    border-radius: 8px;
+}
+
 form {
     max-width: 75vh;
     margin: 0;
@@ -99,6 +107,41 @@ form p {
     margin-bottom: 1em;
 }
 
+#questionLabel {
+    margin-top: 1.5em;
+    display: block;
+}
+
+#questionTitle {
+    margin-top: 1em;
+    margin-bottom: -0.8em;
+    padding: 0;
+}
+.answeredMember {
+    margin-top: -1.5em;
+}
+select {
+    border: 1px solid #363636;
+    padding: 0.6em 1.2em;
+    height: 2.45em;
+    margin: 0.25em;
+    font-size: 1em;
+    font-weight: 500;
+    font-family: inherit;
+    background-color: #1a1a1a;
+    cursor: pointer;
+    transition: border-color 0.25s;
+}
+
+select:hover {
+    border-color: #646cff;
+}
+
+select:focus {
+    border-color: #646cff;
+    outline: none;
+}
+
 @media (prefers-color-scheme: light) {
     :root {
         color: #213547;
@@ -108,6 +151,9 @@ form p {
         color: #747bff;
     }
     button {
+        background-color: #f1f1f1;
+    }
+    select {
         background-color: #f1f1f1;
     }
     #rooms-container,
