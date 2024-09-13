@@ -96,31 +96,38 @@ function Quiz({ roomId }: { roomId: string }) {
     if (questions.length > 0) {
       const handleTimer = () => {
         setTimeRemaining(15);
+  
         if (currentQuestionIndex === 0 && questionDisplayTime === null) {
           setQuestionDisplayTime(Date.now() / 1000);
         }
+  
         const intervalId = setInterval(() => {
           setTimeRemaining((prevTime) => {
             if (prevTime <= 1) {
               clearInterval(intervalId);
-              setCurrentQuestionIndex((prevIndex) => {
-                const nextIndex = (prevIndex + 1) % questions.length;
-                setHasAnswered(false);
-                setAnswerUpdates([]);
-
-                setQuestionDisplayTime(Date.now() / 1000);
-
-                return nextIndex;
-              });
-              return 15;
+  
+              if (currentQuestionIndex < questions.length - 1) {
+                setCurrentQuestionIndex((prevIndex) => {
+                  const nextIndex = prevIndex + 1;
+                  setHasAnswered(false);
+                  setAnswerUpdates([]);
+                  setQuestionDisplayTime(Date.now() / 1000);
+  
+                  return nextIndex;
+                });
+                return 15;
+              } else {
+                setTimeRemaining(0);
+                return 0; 
+              }
             }
             return prevTime - 1;
           });
         }, 1000);
-
+  
         return () => clearInterval(intervalId);
       };
-
+  
       handleTimer();
     }
   }, [questions, currentQuestionIndex]);
