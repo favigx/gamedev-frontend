@@ -34,6 +34,22 @@ function SelectedRoom({ roomId }: { roomId: string }) {
                 newUser.innerHTML = message.body;
                 joinedUsers?.appendChild(newUser);
             });
+            client.subscribe("/topic/add-participant", (message: Message) => {
+                const newParticipant = message.body;
+              
+                setSelectedRoom((prevRoom) => {
+                  if (prevRoom) {
+                    if (!prevRoom.participants.includes(newParticipant)) {
+                      return {
+                        ...prevRoom,
+                        participants: [...prevRoom.participants, newParticipant]
+                      };
+                    }
+                  }
+                  return prevRoom; 
+                });
+              });
+              
         });
 
         setStompClient(client);
@@ -46,6 +62,14 @@ function SelectedRoom({ roomId }: { roomId: string }) {
     }, [roomId]);
 
     function joinRoom() {
+
+        if(stompClient) {
+            stompClient.publish({
+                destination: "/app/add-participant",
+                body: loggedInUserId || ""
+            })
+        }
+
         fetch("http://localhost:8080/user/get-user-from-username/" + loggedInUserId)
             .then((res) => res.json())
             .then((data) => {
