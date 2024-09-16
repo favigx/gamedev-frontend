@@ -121,9 +121,10 @@ form p {
     margin-top: -1.5em;
 }
 select {
+    border-radius: 8px;
     border: 1px solid #363636;
     padding: 0.6em 1.2em;
-    height: 2.45em;
+    height: 2.6em;
     margin: 0.25em;
     font-size: 1em;
     font-weight: 500;

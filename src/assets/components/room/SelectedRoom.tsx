@@ -75,7 +75,6 @@ function SelectedRoom({ roomId }: { roomId: string }) {
                 <strong>
                     <p>{"Skapat av: " + selectedRoom.createdBy}</p>
                 </strong>
-                <button onClick={joinRoom}>Gå med</button>
                 <div id="joinedUsers"></div>
 
                 <strong>
