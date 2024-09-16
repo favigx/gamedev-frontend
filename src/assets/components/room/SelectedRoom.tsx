@@ -9,8 +9,10 @@ function SelectedRoom({ roomId }: { roomId: string }) {
     const [selectedRoom, setSelectedRoom] = useState<RoomInterface | null>(null);
     const [loggedInUserId, setLoggedInUserId] = useState<string | null>(null);
     const [stompClient, setStompClient] = useState<Client | null>(null);
+    const [joinedUsers, setJoinedUsers] = useState<string[]>([]);
 
     useEffect(() => {
+        // Fetch token and decode it
         const token = localStorage.getItem("token");
         if (token) {
             const decodedToken = jwtDecode<{ sub: string }>(token);
@@ -19,21 +21,33 @@ function SelectedRoom({ roomId }: { roomId: string }) {
     }, []);
 
     useEffect(() => {
+        // Fetch room details
         fetch(`http://localhost:8080/room/${roomId}`)
             .then((res) => res.json())
             .then((data) => setSelectedRoom(data))
             .catch((error) => console.error("Error fetching room:", error));
-
+        
+        // Connect to WebSocket
         const socket = new SockJS("http://localhost:8080/websocket");
         const client = Stomp.over(socket);
 
         client.connect({}, () => {
-            client.subscribe("/topic/joined-room-message", (message: Message) => {
-                let joinedUsers = document.getElementById("joinedUsers");
-                let newUser = document.createElement("p");
-                newUser.innerHTML = message.body;
-                joinedUsers?.appendChild(newUser);
+            // Subscribe to room-specific messages
+            const joinedRoomTopic = `/topic/room/${roomId}/joined-room-message`;
+            client.subscribe(joinedRoomTopic, (message: Message) => {
+                const username = message.body;
+                // Add new user to the list
+                setJoinedUsers((prevUsers) => [...prevUsers, username]);
             });
+
+            // Publish a message indicating the user has joined the room
+            if (loggedInUserId) {
+                const joinRoomDestination = `/app/room/${roomId}/joined-room-message`;
+                client.publish({
+                    destination: joinRoomDestination,
+                    body: loggedInUserId,
+                });
+            }
         });
 
         setStompClient(client);
@@ -43,26 +57,7 @@ function SelectedRoom({ roomId }: { roomId: string }) {
                 client.disconnect();
             }
         };
-    }, [roomId]);
-
-    function joinRoom() {
-        fetch("http://localhost:8080/user/get-user-from-username/" + loggedInUserId)
-            .then((res) => res.json())
-            .then((data) => {
-                fetch("http://localhost:8080/room/join/" + selectedRoom?.roomId + "/" + data.userId, {
-                    method: "POST",
-                })
-                    .then((res) => res.json())
-                    .then((data) => console.log(data));
-
-                if (stompClient) {
-                    stompClient.publish({
-                        destination: `/app/joined-room-message`,
-                        body: loggedInUserId || "",
-                    });
-                }
-            });
-    }
+    }, [roomId, loggedInUserId]);
 
     if (!selectedRoom) {
         return <p>Laddar...</p>;
@@ -75,15 +70,13 @@ function SelectedRoom({ roomId }: { roomId: string }) {
                 <strong>
                     <p>{"Skapat av: " + selectedRoom.createdBy}</p>
                 </strong>
-                <button onClick={joinRoom}>Gå med</button>
-                <div id="joinedUsers"></div>
 
                 <strong>
                     <p id="participantsTitle">
                         <u>Deltagare:</u>
                     </p>
                 </strong>
-                {selectedRoom.participants.map((username) => (
+                {joinedUsers.map((username) => (
                     <p className="participants" key={username}>
                         {username}
                     </p>

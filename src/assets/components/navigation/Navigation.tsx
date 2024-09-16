@@ -34,6 +34,9 @@ function Navigation({ setPage, isLoggedIn, setIsLoggedIn }: Props) {
                     <button className="button" onClick={() => setPage("showrooms")}>
                         Visa rum
                     </button>
+                    <button className="button" onClick={() => setPage("quizrules")}>
+                        Spelregler
+                    </button>
                 </>
             )}
         </div>

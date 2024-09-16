@@ -12,11 +12,14 @@ function Quiz({ roomId }: { roomId: string }) {
   const [questions, setQuestions] = useState<QuestionInterface[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [timeRemaining, setTimeRemaining] = useState<number>(15);
+  const [nextQuestionTime, setNextQuestionTime] = useState<number>(0);
   const [answerUpdates, setAnswerUpdates] = useState<string[]>([]);
   const [hasAnswered, setHasAnswered] = useState<boolean>(false);
   const [numQuestions, setNumQuestions] = useState<number>(5);
   const [questionDisplayTime, setQuestionDisplayTime] = useState<number | null>(null);
   const [userScores, setUserScores] = useState<Record<string, number>>({});
+  const [showScores, setShowScores] = useState<boolean>(false);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -27,7 +30,6 @@ function Quiz({ roomId }: { roomId: string }) {
   }, []);
 
   useEffect(() => {
-    
     fetch(`http://localhost:8080/room/${roomId}`)
       .then((res) => res.json())
       .then((data) => setSelectedRoom(data))
@@ -49,13 +51,12 @@ function Quiz({ roomId }: { roomId: string }) {
       });
 
       client.subscribe(`/topic/calculate-points`, (message: Message) => {
-
         const { score, username } = JSON.parse(message.body);
 
         if (username) {
-          setUserScores(prevScores => ({
+          setUserScores((prevScores) => ({
             ...prevScores,
-            [username]: (prevScores[username] || 0) + score
+            [username]: (prevScores[username] || 0) + score,
           }));
         }
       });
@@ -68,75 +69,91 @@ function Quiz({ roomId }: { roomId: string }) {
         client.disconnect();
       }
     };
-  }, [roomId, loggedInUserId]);
-
-  useEffect(() => {
-    if (loggedInUserId) {
-      console.log("SCORES>>>>>>", JSON.stringify(userScores, null, 2)); 
-      renderScore(userScores)
-    }
-  }, [userScores, loggedInUserId]);
-
-  function renderScore(listOfScores: Record<string, number>) {
-    const displayScoreDiv = document.getElementById("displayScoreDiv");
-  
-    if (displayScoreDiv) {
-      displayScoreDiv.innerHTML = '';
-  
-      for (const [username, score] of Object.entries(listOfScores)) {
-        const userPoints = document.createElement("h4");
-        userPoints.innerHTML = `${username} poäng: ${score}`;
-  
-        displayScoreDiv.appendChild(userPoints);
-      }
-    }
-  }
+  }, [roomId]);
 
   useEffect(() => {
     if (questions.length > 0) {
       const handleTimer = () => {
         setTimeRemaining(15);
-  
+
         if (currentQuestionIndex === 0 && questionDisplayTime === null) {
           setQuestionDisplayTime(Date.now() / 1000);
         }
-  
+
         const intervalId = setInterval(() => {
           setTimeRemaining((prevTime) => {
             if (prevTime <= 1) {
               clearInterval(intervalId);
-  
-              if (currentQuestionIndex < questions.length - 1) {
-                setCurrentQuestionIndex((prevIndex) => {
-                  const nextIndex = prevIndex + 1;
-                  setHasAnswered(false);
-                  setAnswerUpdates([]);
-                  setQuestionDisplayTime(Date.now() / 1000);
-  
-                  return nextIndex;
+
+              setShowScores(true);
+              setNextQuestionTime(15);
+              setHasAnswered(true); 
+
+              const nextQuestionInterval = setInterval(() => {
+                setNextQuestionTime((prevNextTime) => {
+                  if (prevNextTime <= 1) {
+                    clearInterval(nextQuestionInterval);
+
+                 
+                    if (currentQuestionIndex < questions.length - 1) {
+                      setCurrentQuestionIndex((prevIndex) => {
+                        const nextIndex = prevIndex + 1;
+                        setHasAnswered(false);
+                        setAnswerUpdates([]);
+                        setQuestionDisplayTime(Date.now() / 1000);
+                        setShowScores(false); 
+                        return nextIndex;
+                      });
+                      setTimeRemaining(15);
+                    } else {
+                      setTimeRemaining(0); 
+                    }
+                    return 0;
+                  }
+                  return prevNextTime - 1;
                 });
-                return 15;
-              } else {
-                setTimeRemaining(0);
-                return 0; 
-              }
+              }, 1000);
+
+              return 0; 
             }
             return prevTime - 1;
           });
         }, 1000);
-  
+
         return () => clearInterval(intervalId);
       };
-  
+
       handleTimer();
     }
   }, [questions, currentQuestionIndex]);
+
+  useEffect(() => {
+    if (loggedInUserId && showScores) {
+      console.log("SCORES>>>>>>", JSON.stringify(userScores, null, 2));
+      renderScore(userScores);
+    }
+  }, [userScores, loggedInUserId, showScores]);
+
+  function renderScore(listOfScores: Record<string, number>) {
+    const displayScoreDiv = document.getElementById("displayScoreDiv");
+
+    if (displayScoreDiv) {
+      displayScoreDiv.innerHTML = '';
+
+      for (const [username, score] of Object.entries(listOfScores)) {
+        const userPoints = document.createElement("h4");
+        userPoints.innerHTML = `${username} poäng: ${score}`;
+
+        displayScoreDiv.appendChild(userPoints);
+      }
+    }
+  }
 
   function startQuiz() {
     if (stompClient) {
       stompClient.publish({
         destination: `/app/start-quiz/${roomId}`,
-        body: JSON.stringify(numQuestions)
+        body: JSON.stringify(numQuestions),
       });
     }
   }
@@ -146,44 +163,40 @@ function Quiz({ roomId }: { roomId: string }) {
       console.log("You have already answered this question.");
       return;
     }
-
+  
     if (questionDisplayTime) {
-      const timeTaken = (Date.now() / 1000) - questionDisplayTime;
+      const timeTaken = Date.now() / 1000 - questionDisplayTime;
       const formattedTimeTaken = timeTaken.toFixed(1);
       console.log(`Time taken to answer: ${formattedTimeTaken} seconds`);
-
+  
       stompClient?.publish({
         destination: `/app/calculate-points`,
         body: JSON.stringify({
           questionId: questionId,
           answer: answer,
           username: loggedInUserId,
-          timeToAnswer: timeTaken
-        })
-      });
-    }
-
-    console.log(`Question ID: ${questionId}, Answer: ${answer}`);
-
-    if (stompClient) {
-      stompClient.publish({
-        destination: `/app/answer-choice`,
-        body: JSON.stringify({
-          username: loggedInUserId,
-          questionId,
-          answer,
+          timeToAnswer: timeTaken,
         }),
       });
-
-      stompClient.publish({
-        destination: `/app/has-answered`,
-        body: JSON.stringify(loggedInUserId),
-      });
-
-      setHasAnswered(true);
     }
+  
+    stompClient?.publish({
+      destination: `/app/answer-choice`,
+      body: JSON.stringify({
+        username: loggedInUserId,
+        questionId: questionId,
+        answer: answer
+      }),
+    });
+  
+    stompClient?.publish({
+      destination: `/app/has-answered`,
+      body: JSON.stringify(loggedInUserId),
+    });
+  
+    setSelectedAnswer(answer); 
+    setHasAnswered(true);
   }
-
   if (!selectedRoom) {
     return <p>Laddar...</p>;
   }
@@ -201,36 +214,46 @@ function Quiz({ roomId }: { roomId: string }) {
         <option value={5}>5 frågor</option>
         <option value={10}>10 frågor</option>
       </select>
-
       <button onClick={startQuiz}>Starta Quiz</button>
-      <div id="displayScoreDiv"></div>
-      <h3>Fråga:</h3>
-      {currentQuestion ? (
+      {showScores ? (
         <div>
-          <p><strong>{currentQuestion.question}</strong></p>
-          <div>
-            {currentQuestion.answers.map((answer, index) => (
-              <button
-                key={index}
-                onClick={() =>
-                  handleAnswerClick(currentQuestion.questionId, answer)
-                }
-                disabled={hasAnswered}
-              >
-                {answer}
-              </button>
-            ))}
-          </div>
-          <p>Tid kvar: {timeRemaining} sekunder</p>
-          <div>
-            <h4>Andra deltagare som svarat:</h4>
-            {answerUpdates.map((update, index) => (
-              <p key={index}>{update}</p>
-            ))}
-          </div>
+          
+          <div id="displayScoreDiv"></div>
+          <p>Nästa fråga om: {nextQuestionTime} sekunder</p>
         </div>
       ) : (
-        <p>Inga frågor tillgängliga</p>
+        <>
+          <h3>Fråga:</h3>
+          {currentQuestion ? (
+            <div>
+              <p><strong>{currentQuestion.question}</strong></p>
+              <div>
+              {currentQuestion.answers.map((answer, index) => (
+                <button
+                  key={index}
+                  onClick={() =>
+                    handleAnswerClick(currentQuestion.questionId, answer)
+                  }
+                  disabled={hasAnswered}
+                  style={{
+                    backgroundColor: selectedAnswer === answer ? 'white' : 'initial',
+                  }}
+                >
+                  {answer}
+                </button>
+              ))}
+              </div>
+              <p>Tid kvar: {timeRemaining} sekunder</p>
+              <div>
+                {answerUpdates.map((update, index) => (
+                  <p key={index}>{update}</p>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p>Inga frågor tillgängliga</p>
+          )}
+        </>
       )}
     </>
   );
