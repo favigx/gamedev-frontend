@@ -15,7 +15,7 @@ function CreateRoom({ setPage }: Props) {
     const [stompClient, setStompClient] = useState<Client | null>(null);
 
     useEffect(() => {
-        const socket = new SockJS("http://localhost:8080/websocket");
+        const socket = new SockJS("https://octopus-app-p37jg.ondigitalocean.app/websocket");
         const client = over(socket);
 
         client.connect({}, (frame) => {
@@ -39,7 +39,7 @@ function CreateRoom({ setPage }: Props) {
         const decodedToken = jwtDecode(token);
         const loggedInUser = decodedToken.sub;
 
-        fetch(`http://localhost:8080/room/${loggedInUser}`, {
+        fetch(`https://octopus-app-p37jg.ondigitalocean.app/room/${loggedInUser}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
