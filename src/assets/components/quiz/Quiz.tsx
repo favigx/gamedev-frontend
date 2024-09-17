@@ -62,6 +62,13 @@ function Quiz({ roomId }: { roomId: string }) {
             [username]: (prevScores[username] || 0) + score,
           }));
         }
+
+        if (username) {
+          setUserScores(prevScores => ({
+            ...prevScores,
+            [username]: (prevScores[username] || 0) + score
+          }));
+        }
       });
     });
 
@@ -72,9 +79,14 @@ function Quiz({ roomId }: { roomId: string }) {
         client.disconnect();
       }
     };
-  }, [roomId]);
+  }, [roomId,loggedInUserId]);
 
   useEffect(() => {
+
+    if (loggedInUserId) {
+      console.log("SCORES>>>>>>", JSON.stringify(userScores, null, 2)); 
+      renderScore(userScores)
+    }
     
     if (questions.length > 0) {
       const handleTimer = () => {
@@ -141,6 +153,21 @@ function Quiz({ roomId }: { roomId: string }) {
       handleTimer();
     }
   }, [questions, currentQuestionIndex]);
+
+  function renderScore(listOfScores: Record<string, number>) {
+    const displayScoreDiv = document.getElementById("displayScoreDiv");
+
+    if (displayScoreDiv) {
+      displayScoreDiv.innerHTML = '';
+
+      for (const [username, score] of Object.entries(listOfScores)) {
+        const userPoints = document.createElement("h4");
+        userPoints.innerHTML = `${username} Totala poäng: ${score}`;
+
+        displayScoreDiv.appendChild(userPoints);
+      }
+    }
+  }
 
   useEffect(() => {
     console.log("Updated Total Scores: ", totalScores);
@@ -220,6 +247,7 @@ function Quiz({ roomId }: { roomId: string }) {
         <option value={10}>10 frågor</option>
       </select>
       <button onClick={startQuiz}>Starta Quiz</button>
+      <div id="displayScoreDiv"></div>
       
       {showScores ? (
         <div>
