@@ -33,12 +33,12 @@ function Quiz({ roomId }: { roomId: string }) {
   }, []);
 
   useEffect(() => {
-    fetch(`http://localhost:8080/room/${roomId}`)
+    fetch(`https://octopus-app-p37jg.ondigitalocean.app/room/${roomId}`)
       .then((res) => res.json())
       .then((data) => setSelectedRoom(data))
       .catch((error) => console.error("Error fetching room:", error));
 
-    const socket = new SockJS("http://localhost:8080/websocket");
+    const socket = new SockJS("https://octopus-app-p37jg.ondigitalocean.app/websocket");
     const client = Stomp.over(socket);
 
     client.connect({}, () => {
@@ -75,6 +75,7 @@ function Quiz({ roomId }: { roomId: string }) {
   }, [roomId]);
 
   useEffect(() => {
+    
     if (questions.length > 0) {
       const handleTimer = () => {
         setTimeRemaining(15);
@@ -140,6 +141,10 @@ function Quiz({ roomId }: { roomId: string }) {
       handleTimer();
     }
   }, [questions, currentQuestionIndex]);
+
+  useEffect(() => {
+    console.log("Updated Total Scores: ", totalScores);
+  }, [totalScores]);
 
   useEffect(() => {
     if (loggedInUserId && showScores) {

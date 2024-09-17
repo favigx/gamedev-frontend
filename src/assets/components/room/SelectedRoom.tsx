@@ -19,12 +19,12 @@ function SelectedRoom({ roomId }: { roomId: string }) {
     }, []);
 
     useEffect(() => {
-        fetch(`http://localhost:8080/room/${roomId}`)
+        fetch(`https://octopus-app-p37jg.ondigitalocean.app/room/${roomId}`)
             .then((res) => res.json())
             .then((data) => setSelectedRoom(data))
             .catch((error) => console.error("Error fetching room:", error));
 
-        const socket = new SockJS("http://localhost:8080/websocket");
+        const socket = new SockJS("https://octopus-app-p37jg.ondigitalocean.app/websocket");
         const client = Stomp.over(socket);
 
         client.connect({}, () => {
@@ -70,10 +70,10 @@ function SelectedRoom({ roomId }: { roomId: string }) {
             })
         }
 
-        fetch("http://localhost:8080/user/get-user-from-username/" + loggedInUserId)
+        fetch("https://octopus-app-p37jg.ondigitalocean.app/user/get-user-from-username/" + loggedInUserId)
             .then((res) => res.json())
             .then((data) => {
-                fetch("http://localhost:8080/room/join/" + selectedRoom?.roomId + "/" + data.userId, {
+                fetch("https://octopus-app-p37jg.ondigitalocean.app/room/join/" + selectedRoom?.roomId + "/" + data.userId, {
                     method: "POST",
                 })
                     .then((res) => res.json())
