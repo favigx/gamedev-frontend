@@ -21,7 +21,7 @@ const ShowRooms = () => {
     }, []);
 
     useEffect(() => {
-        const socket = new SockJS("http://localhost:8080/websocket");
+        const socket = new SockJS("https://octopus-app-p37jg.ondigitalocean.app/websocket");
         const client = over(socket);
 
         client.connect({}, (frame) => {
