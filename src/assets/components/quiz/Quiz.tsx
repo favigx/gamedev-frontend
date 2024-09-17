@@ -152,32 +152,6 @@ function Quiz({ roomId }: { roomId: string }) {
     }
   }, [userScores, loggedInUserId, showScores]);
 
-  function renderScore(listOfScores: Record<string, number>) {
-    const displayScoreDiv = document.getElementById("displayScoreDiv");
-    const currentQuestionScoreDiv = document.getElementById("currentQuestionScoreDiv");
-
-    if (displayScoreDiv) {
-      displayScoreDiv.innerHTML = '';
-
-      for (const [username, score] of Object.entries(listOfScores)) {
-        const userPoints = document.createElement("h4");
-        userPoints.innerHTML = `${username} poäng: ${score}`;
-
-        displayScoreDiv.appendChild(userPoints);
-      }
-    }
-
-    if (currentQuestionScoreDiv) {
-      currentQuestionScoreDiv.innerHTML = '';
-
-      for (const [username, score] of Object.entries(currentQuestionScores)) {
-        const userPoints = document.createElement("h4");
-        userPoints.innerHTML = `${username} poäng för denna fråga: ${score}`;
-
-        currentQuestionScoreDiv.appendChild(userPoints);
-      }
-    }
-  }
 
   function startQuiz() {
     if (stompClient) {
