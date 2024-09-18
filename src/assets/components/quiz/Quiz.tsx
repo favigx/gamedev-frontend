@@ -221,10 +221,9 @@ function Quiz({ roomId }: { roomId: string }) {
                         <option value={10}>10 frågor</option>
                     </select>
                     <button onClick={startQuiz}>Starta Quiz</button>
-                    <div id="displayScoreDiv">{renderScore()}</div>
                 </div>
             ) : null}
-
+            <div id="displayScoreDiv">{renderScore()}</div>
             {showScores ? (
                 <div>
                     <div id="currentQuestionScoreDiv">
