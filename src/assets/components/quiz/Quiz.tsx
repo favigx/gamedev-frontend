@@ -223,7 +223,9 @@ function Quiz({ roomId }: { roomId: string }) {
                     <button onClick={startQuiz}>Starta Quiz</button>
                 </div>
             ) : null}
+            <h4>Totalpoäng</h4>
             <div id="displayScoreDiv">{renderScore()}</div>
+            <h4>---</h4>
             {showScores ? (
                 <div>
                     <div id="currentQuestionScoreDiv">
