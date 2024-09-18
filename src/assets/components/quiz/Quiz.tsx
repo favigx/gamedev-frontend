@@ -80,11 +80,8 @@ function Quiz({ roomId }: { roomId: string }) {
     };
   }, [roomId, loggedInUserId]);
 
-  useEffect(() => {
-    if (loggedInUserId) {
-      renderScore(userScores); 
-    }
 
+  useEffect(() => {
     if (questions.length > 0) {
       const handleTimer = () => {
         setTimeRemaining(15);
@@ -143,20 +140,12 @@ function Quiz({ roomId }: { roomId: string }) {
     }
   }, [questions, currentQuestionIndex]);
 
-  function renderScore(listOfScores: Record<string, number>) {
-    const displayScoreDiv = document.getElementById("displayScoreDiv");
+  const renderScore = () => {
+    return Object.entries(userScores).map(([username, score]) => (
+      <h4 key={username}>{`${username}: ${score} poäng`}</h4>
+    ));
+  };
 
-    if (displayScoreDiv) {
-      displayScoreDiv.innerHTML = '';
-
-      for (const [username, score] of Object.entries(listOfScores)) {
-        const userPoints = document.createElement("h4");
-        userPoints.innerHTML = `${username}: ${score} poäng`;
-
-        displayScoreDiv.appendChild(userPoints);
-      }
-    }
-  }
 
   useEffect(() => {
     if (selectedRoom && selectedRoom.participants) {
@@ -165,9 +154,9 @@ function Quiz({ roomId }: { roomId: string }) {
         initialScores[player] = 0;
       });
       setUserScores(initialScores);
-      renderScore(initialScores);
     }
   }, [selectedRoom]);
+
 
   function startQuiz() {
     if (stompClient) {
@@ -236,7 +225,7 @@ function Quiz({ roomId }: { roomId: string }) {
         <option value={10}>10 frågor</option>
       </select>
       <button onClick={startQuiz}>Starta Quiz</button>
-      <div id="displayScoreDiv"></div>
+      <div id="displayScoreDiv">{renderScore()}</div>
 
       {showScores ? (
         <div>
@@ -257,9 +246,7 @@ function Quiz({ roomId }: { roomId: string }) {
                 {currentQuestion.answers.map((answer, index) => (
                   <button
                     key={index}
-                    onClick={() =>
-                      handleAnswerClick(currentQuestion.questionId, answer)
-                    }
+                    onClick={() => handleAnswerClick(currentQuestion.questionId, answer)}
                     disabled={hasAnswered}
                     style={{
                       backgroundColor: selectedAnswer === answer ? 'white' : 'initial',
