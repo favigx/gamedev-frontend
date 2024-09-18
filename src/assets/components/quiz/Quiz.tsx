@@ -141,9 +141,11 @@ function Quiz({ roomId }: { roomId: string }) {
   }, [questions, currentQuestionIndex]);
 
   const renderScore = () => {
-    return Object.entries(userScores).map(([username, score]) => (
-      <h4 key={username}>{`${username}: ${score} poäng`}</h4>
-    ));
+    if(nextQuestionTime != 0){
+      return Object.entries(userScores).map(([username, score]) => (
+        <h4 key={username}>{`${username}: ${score} poäng`}</h4>
+      ));
+    }
   };
 
 
