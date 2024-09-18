@@ -22,7 +22,6 @@ function Quiz({ roomId }: { roomId: string }) {
   const [currentQuestionScores, setCurrentQuestionScores] = useState<Record<string, number>>({});
   const [showScores, setShowScores] = useState<boolean>(false);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [totalScores, setTotalScores] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -79,15 +78,13 @@ function Quiz({ roomId }: { roomId: string }) {
         client.disconnect();
       }
     };
-  }, [roomId,loggedInUserId]);
+  }, [roomId, loggedInUserId]);
 
   useEffect(() => {
-
     if (loggedInUserId) {
-      console.log("SCORES>>>>>>", JSON.stringify(userScores, null, 2)); 
-      renderScore(userScores)
+      renderScore(userScores); 
     }
-    
+
     if (questions.length > 0) {
       const handleTimer = () => {
         setTimeRemaining(15);
@@ -100,10 +97,9 @@ function Quiz({ roomId }: { roomId: string }) {
           setTimeRemaining((prevTime) => {
             if (prevTime <= 1) {
               clearInterval(intervalId);
-
               setShowScores(true);
               setNextQuestionTime(15);
-              setHasAnswered(true); 
+              setHasAnswered(true);
 
               const nextQuestionInterval = setInterval(() => {
                 setNextQuestionTime((prevNextTime) => {
@@ -115,25 +111,18 @@ function Quiz({ roomId }: { roomId: string }) {
                         ...prevScores,
                         ...currentQuestionScores,
                       }));
-                      setTotalScores((prevScores) => {
-                        const updatedScores = { ...prevScores };
-                        for (const [username, score] of Object.entries(currentQuestionScores)) {
-                          updatedScores[username] = (updatedScores[username] || 0) + score;
-                        }
-                        return updatedScores;
-                      });
-                      setCurrentQuestionScores({}); 
+                      setCurrentQuestionScores({});
                       setCurrentQuestionIndex((prevIndex) => {
                         const nextIndex = prevIndex + 1;
                         setHasAnswered(false);
                         setAnswerUpdates([]);
                         setQuestionDisplayTime(Date.now() / 1000);
-                        setShowScores(false); 
+                        setShowScores(false);
                         return nextIndex;
                       });
                       setTimeRemaining(15);
                     } else {
-                      setTimeRemaining(0); 
+                      setTimeRemaining(0);
                     }
                     return 0;
                   }
@@ -141,7 +130,7 @@ function Quiz({ roomId }: { roomId: string }) {
                 });
               }, 1000);
 
-              return 0; 
+              return 0;
             }
             return prevTime - 1;
           });
@@ -162,7 +151,7 @@ function Quiz({ roomId }: { roomId: string }) {
 
       for (const [username, score] of Object.entries(listOfScores)) {
         const userPoints = document.createElement("h4");
-        userPoints.innerHTML = `${username} Totala poäng: ${score}`;
+        userPoints.innerHTML = `${username}: ${score} poäng`;
 
         displayScoreDiv.appendChild(userPoints);
       }
@@ -170,15 +159,15 @@ function Quiz({ roomId }: { roomId: string }) {
   }
 
   useEffect(() => {
-    console.log("Updated Total Scores: ", totalScores);
-  }, [totalScores]);
-
-  useEffect(() => {
-    if (loggedInUserId && showScores) {
-      console.log("SCORES>>>>>>", JSON.stringify(userScores, null, 2));
+    if (selectedRoom && selectedRoom.participants) {
+      const initialScores: Record<string, number> = {};
+      selectedRoom.participants.forEach((player: string) => {
+        initialScores[player] = 0;
+      });
+      setUserScores(initialScores);
+      renderScore(initialScores);
     }
-  }, [userScores, loggedInUserId, showScores]);
-
+  }, [selectedRoom]);
 
   function startQuiz() {
     if (stompClient) {
@@ -194,12 +183,12 @@ function Quiz({ roomId }: { roomId: string }) {
       console.log("You have already answered this question.");
       return;
     }
-  
+
     if (questionDisplayTime) {
       const timeTaken = Date.now() / 1000 - questionDisplayTime;
       const formattedTimeTaken = timeTaken.toFixed(1);
       console.log(`Time taken to answer: ${formattedTimeTaken} seconds`);
-  
+
       stompClient?.publish({
         destination: `/app/calculate-points`,
         body: JSON.stringify({
@@ -210,7 +199,7 @@ function Quiz({ roomId }: { roomId: string }) {
         }),
       });
     }
-  
+
     stompClient?.publish({
       destination: `/app/answer-choice`,
       body: JSON.stringify({
@@ -219,13 +208,13 @@ function Quiz({ roomId }: { roomId: string }) {
         answer: answer
       }),
     });
-  
+
     stompClient?.publish({
       destination: `/app/has-answered`,
       body: JSON.stringify(loggedInUserId),
     });
-  
-    setSelectedAnswer(answer); 
+
+    setSelectedAnswer(answer);
     setHasAnswered(true);
   }
 
@@ -248,7 +237,7 @@ function Quiz({ roomId }: { roomId: string }) {
       </select>
       <button onClick={startQuiz}>Starta Quiz</button>
       <div id="displayScoreDiv"></div>
-      
+
       {showScores ? (
         <div>
           <div id="currentQuestionScoreDiv">
@@ -257,11 +246,6 @@ function Quiz({ roomId }: { roomId: string }) {
             ))}
           </div>
           <p>Nästa fråga om: {nextQuestionTime} sekunder</p>
-          <div id="totalScoreDiv">
-            {Object.entries(totalScores).map(([username, score]) => (
-              <p key={username}>{username}: {score} total poäng</p>
-            ))}
-          </div>
         </div>
       ) : (
         <>
